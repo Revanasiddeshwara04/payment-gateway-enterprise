@@ -2,6 +2,7 @@ package com.paymentgateway.payment.service;
 
 import com.paymentgateway.payment.dto.CreatePaymentRequest;
 import com.paymentgateway.payment.entity.Payment;
+import com.paymentgateway.payment.kafka.PaymentEventProducer;
 import com.paymentgateway.payment.repository.PaymentRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +13,17 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final PaymentEventProducer paymentEventProducer;
 
     public PaymentService(
-            PaymentRepository paymentRepository) {
+            PaymentRepository paymentRepository,
+            PaymentEventProducer paymentEventProducer) {
 
         this.paymentRepository = paymentRepository;
+        this.paymentEventProducer = paymentEventProducer;
     }
+
+
 
     public String createPayment(
             CreatePaymentRequest request) {
@@ -42,6 +48,10 @@ public class PaymentService {
         payment.setStatus("CREATED");
 
         paymentRepository.save(payment);
+
+        paymentEventProducer.publishPaymentCreatedEvent(
+                "Payment Created : "
+                        + payment.getPaymentId());
 
         return "Payment Created Successfully";
     }
